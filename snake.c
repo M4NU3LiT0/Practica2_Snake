@@ -8,15 +8,20 @@ void spawn_snake();
 void clear();
 void movimiento(unsigned int mov);
 
+int vertical_orientation = 0    ;  // 0 = horizontal, 1 = vertical
+
 volatile unsigned int * d_pad_u = D_PAD_0_UP;
 volatile unsigned int * d_pad_d = D_PAD_0_DOWN;
 volatile unsigned int * d_pad_l = D_PAD_0_LEFT;
 volatile unsigned int * d_pad_r = D_PAD_0_RIGHT;
 
 //led max
-unsigned short max_x = 33;
-unsigned short max_y = 23;
+unsigned short max_x = 32; // Reducido en 1 para asegurar que la manzana 2x2 quepa
+unsigned short max_y = 22; // Reducido en 1 para asegurar que la manzana 2x2 quepa
 
+//apple coords
+unsigned int ax = 0;
+unsigned int ay = 0;
 
 // Snake coordinates arrays (dos columnas para el ancho)
 #define SNAKE_LENGTH 4
@@ -37,7 +42,7 @@ unsigned int *tail_y_right;
 
 //colors
 unsigned int snake_color = 0x0000FF00;  // Verde
-
+unsigned int apple_color = 0x00FF00FF;  // Rosa
 
 void main() {
     clear();
@@ -47,10 +52,12 @@ void main() {
         // Columna izquierda
         snake_x[i][0] = 17 + i;
         snake_y[i][0] = 12;
-        // Columna derecha
+        // Columna derecha (arriba cuando es horizontal)
         snake_x[i][1] = 17 + i;
         snake_y[i][1] = 13;  // Un pixel arriba para el ancho
     }
+    
+    vertical_orientation = 0;  // Comenzar en orientación horizontal
     
     // Inicializar punteros
     // Cabeza (último segmento)
@@ -105,19 +112,50 @@ void movimiento(unsigned int mov) {
     
     // Mover la cabeza según la dirección
     switch(mov) {
-        case 1://arriba
+        case 1: //arriba
+            if (!vertical_orientation) {
+                // Cambiar de horizontal a vertical
+                vertical_orientation = 1;
+                // Ajustar el segundo pixel para estar a la derecha en vez de arriba
+                *head_x_right = *head_x_left + 1;
+                *head_y_right = *head_y_left;
+            }
             (*head_y_left)++;
             (*head_y_right)++;
             break;
-        case 2://abajo
+            
+        case 2: //abajo
+            if (!vertical_orientation) {
+                // Cambiar de horizontal a vertical
+                vertical_orientation = 1;
+                // Ajustar el segundo pixel para estar a la derecha en vez de arriba
+                *head_x_right = *head_x_left + 1;
+                *head_y_right = *head_y_left;
+            }
             (*head_y_left)--;
             (*head_y_right)--;
             break;
-        case 3://izq
+            
+        case 3: //izquierda
+            if (vertical_orientation) {
+                // Cambiar de vertical a horizontal
+                vertical_orientation = 0;
+                // Ajustar el segundo pixel para estar arriba en vez de a la derecha
+                *head_x_right = *head_x_left;
+                *head_y_right = *head_y_left + 1;
+            }
             (*head_x_left)--;
             (*head_x_right)--;
             break;
-        case 4://derecha
+            
+        case 4: //derecha
+            if (vertical_orientation) {
+                // Cambiar de vertical a horizontal
+                vertical_orientation = 0;
+                // Ajustar el segundo pixel para estar arriba en vez de a la derecha
+                *head_x_right = *head_x_left;
+                *head_y_right = *head_y_left + 1;
+            }
             (*head_x_left)++;
             (*head_x_right)++;
             break;
@@ -139,7 +177,6 @@ void spawn_snake() {
         set_pixel(snake_x[i][1], snake_y[i][1], snake_color);  // Columna derecha
     }
 }
-
 
 void set_pixel(unsigned int x, unsigned int y, unsigned int color) {
     unsigned int *led_base = LED_MATRIX_0_BASE;
