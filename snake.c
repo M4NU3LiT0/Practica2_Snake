@@ -13,13 +13,17 @@ volatile unsigned int * d_pad_d = D_PAD_0_DOWN;
 volatile unsigned int * d_pad_l = D_PAD_0_LEFT;
 volatile unsigned int * d_pad_r = D_PAD_0_RIGHT;
 
+//led max
 unsigned short max_x = 33;
 unsigned short max_y = 23;
-
 
 //snake coords
 unsigned int x = 17;
 unsigned int y = 12;
+
+//snake dimensions
+unsigned int snake_width = 2;
+unsigned int snake_height = 4;
 
 //colors
 unsigned int snake_color = 0x0000FF00;  // Verde
@@ -27,20 +31,20 @@ unsigned int snake_color = 0x0000FF00;  // Verde
 void main() {
     clear();
     spawn_snake(x,y,snake_color);
-
+   
     unsigned int mov = 4; // 1 = arriba, 2 = abajo, 3 = izq, 4 = derecha
 
     while (1) {
-        if (*d_pad_u == 1 && mov != 2) { //arriba
+        if (*d_pad_u == 1 && mov != 2) {
             mov = 1;
         }
-        if (*d_pad_d == 1 && mov != 1) { //abajo
+        if (*d_pad_d == 1 && mov != 1) {
             mov = 2;
         }
-        if (*d_pad_l == 1 && mov != 4) { //izquierda
+        if (*d_pad_l == 1 && mov != 4) {
             mov = 3;
         }
-        if (*d_pad_r == 1 && mov != 3) { //derecha
+        if (*d_pad_r == 1 && mov != 3) {
             mov = 4;
         }
         movimiento(mov);
@@ -73,11 +77,13 @@ void movimiento(unsigned int mov) {
     }
 }
 
+//test para cambiar el cuadrado
 void spawn_snake(unsigned int x, unsigned int y, unsigned int color) {
-    set_pixel(x, y, color);
-    set_pixel(x, y+1, color);
-    set_pixel(x+1, y, color);
-    set_pixel(x+1, y+1, color);
+    for(int i = 0; i < snake_width; i++) {
+        for(int j = 0; j < snake_height; j++) {
+            set_pixel(x + i, y + j, color);
+        }
+    }
 }
 
 void set_pixel(unsigned int x, unsigned int y, unsigned int color) {
@@ -85,7 +91,7 @@ void set_pixel(unsigned int x, unsigned int y, unsigned int color) {
     unsigned int *address;
     unsigned int offset;
 
-    offset = x + (24-y) * LED_MATRIX_0_WIDTH; //PARA QUE EL ORIGEN SEA LA ESQUINA DE ABAJO
+    offset = x + (24-y) * LED_MATRIX_0_WIDTH;
     address = led_base + offset;
     *(address) = color;
 }
