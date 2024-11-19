@@ -1,85 +1,102 @@
 #include "ripes_system.h"
 #include <stdio.h>
-#define W LED_MATRIX_0_WIDTH
-#define H LED_MATRIX_0_HEIGHT
-#define L (H*W)
+#include <stdlib.h>
 
-volatile unsigned int *led_base = LED_MATRIX_0_BASE;
-volatile unsigned int *snake[L];  // array de la serpiente
-int snakeLenght = 8; 
-int pos_x = 1;
-int pos_y = 1;
+void set_pixel(unsigned int x, unsigned int y, unsigned int color);
+void delay();
+void spawn_snake(unsigned int x, unsigned int y, unsigned int color);
+void clear();
+void movimiento(unsigned int mov);
 
-void bordes() { 
-    for (int i = 0; i < W; i++) {
-        *(led_base + i) = 0xFF0000; //arriba
-        *(led_base + (W * (H - 1)) + i) = 0xFF0000; //abajo
+volatile unsigned int * d_pad_u = D_PAD_0_UP;
+volatile unsigned int * d_pad_d = D_PAD_0_DOWN;
+volatile unsigned int * d_pad_l = D_PAD_0_LEFT;
+volatile unsigned int * d_pad_r = D_PAD_0_RIGHT;
+
+unsigned short max_x = 33;
+unsigned short max_y = 23;
+
+
+//snake coords
+unsigned int x = 17;
+unsigned int y = 12;
+
+//colors
+unsigned int snake_color = 0x0000FF00;  // Verde
+
+void main() {
+    clear();
+    spawn_snake(x,y,snake_color);
+
+    unsigned int mov = 4; // 1 = arriba, 2 = abajo, 3 = izq, 4 = derecha
+
+    while (1) {
+        if (*d_pad_u == 1 && mov != 2) { //arriba
+            mov = 1;
+        }
+        if (*d_pad_d == 1 && mov != 1) { //abajo
+            mov = 2;
+        }
+        if (*d_pad_l == 1 && mov != 4) { //izquierda
+            mov = 3;
+        }
+        if (*d_pad_r == 1 && mov != 3) { //derecha
+            mov = 4;
+        }
+        movimiento(mov);
+        delay();
     }
-    for (int i = 0; i < H; i++) {
-        *(led_base + (W * i)) = 0xFF0000; //izquierda
-        *((led_base + (W * i)) + (W - 1)) = 0xFF0000; //derecha
+}
+
+void movimiento(unsigned int mov) {
+    switch(mov) {
+        case 1://arriba
+            spawn_snake(x,y,0);
+            y += 1;
+            spawn_snake(x,y,snake_color);
+            break;
+        case 2://abajo
+            spawn_snake(x,y,0);
+            y -= 1;
+            spawn_snake(x,y,snake_color);
+            break;
+        case 3://izq
+            spawn_snake(x,y,0);
+            x -= 1;
+            spawn_snake(x,y,snake_color);
+            break;
+        case 4://derecha
+            spawn_snake(x,y,0);
+            x += 1;
+            spawn_snake(x,y,snake_color);
+            break;
     }
+}
+
+void spawn_snake(unsigned int x, unsigned int y, unsigned int color) {
+    set_pixel(x, y, color);
+    set_pixel(x, y+1, color);
+    set_pixel(x+1, y, color);
+    set_pixel(x+1, y+1, color);
+}
+
+void set_pixel(unsigned int x, unsigned int y, unsigned int color) {
+    unsigned int *led_base = LED_MATRIX_0_BASE;
+    unsigned int *address;
+    unsigned int offset;
+
+    offset = x + (24-y) * LED_MATRIX_0_WIDTH; //PARA QUE EL ORIGEN SEA LA ESQUINA DE ABAJO
+    address = led_base + offset;
+    *(address) = color;
+}
+
+void delay() {
+    for (volatile int i = 0; i < 2000; i++) {}
 }
 
 void clear() {
-    for (int i = 0; i < (W * H); i++) {
+    unsigned int *led_base = LED_MATRIX_0_BASE;
+    for (int i = 0; i < LED_MATRIX_0_WIDTH * LED_MATRIX_0_HEIGHT; i++) {
         *(led_base + i) = 0x00;
     }
-}
-
-void spawnSnake() {
-    // Primera fila (4) --- snake[0] = led_base + W + 2;
-    int limit = snakeLenght / 2; 
-    for (int i = 0; i < limit; i++) {
-        snake[i] = led_base + W + (i + 2);
-    }
-    // Segunda fila (4) --- snake[4] = led_base + (2 * W) + 2;
-    for (int i = 0; i < limit; i++) {
-        snake[i + limit] = led_base + (2 * W) + (i + 2);//corregido xd
-    }
-    
-    
-    // Color - verde
-    for (int i = 0; i < snakeLenght; i++) {
-        *snake[i] = 0x00FF00;
-    }
-}
-
-void moveDerecha() {
-    // Limpiar la cola:
-    *snake[0] = 0x000000;
-    *snake[snakeLenght/2] = 0x000000;
-    
-    // Mover primera fila:
-    for (int i = 0; i < (snakeLenght/2) - 1; i++) {
-        snake[i] = snake[i + 1];
-    }
-    snake[(snakeLenght/2) - 1] = snake[(snakeLenght/2) - 2] + 1;
-    
-    // Mover segunda fila:
-    for (int i = snakeLenght/2; i < snakeLenght - 1; i++) {
-        snake[i] = snake[i + 1];
-    }
-    snake[snakeLenght - 1] = snake[snakeLenght - 2] + 1;
-    
-    //repintamos
-    for (int i = 0; i < snakeLenght; i++) {
-        *snake[i] = 0x00FF00;
-    }
-}
-
-void delay(int millis) {
-    for (volatile int i = 0; i < millis * 1000; i++) {
-    }
-}
-
-int main() {
-    clear();
-    bordes();
-    spawnSnake();
-    while (1) {
-        moveDerecha();
-        delay(5);
-    }
-    return 0;
 }
