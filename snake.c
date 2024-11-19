@@ -4,7 +4,7 @@
 
 void set_pixel(unsigned int x, unsigned int y, unsigned int color);
 void delay();
-void spawn_snake(unsigned int x, unsigned int y, unsigned int color);
+void spawn_snake();
 void clear();
 void movimiento(unsigned int mov);
 
@@ -17,21 +17,39 @@ volatile unsigned int * d_pad_r = D_PAD_0_RIGHT;
 unsigned short max_x = 33;
 unsigned short max_y = 23;
 
-//snake coords
-unsigned int x = 17;
-unsigned int y = 12;
 
-//snake dimensions
-unsigned int snake_width = 2;
-unsigned int snake_height = 4;
+// para guardar el historial de posiciones}
+#define SNAKE_LENGTH 4
+unsigned int snake_x[SNAKE_LENGTH];  // coordenadas x/ segmento
+unsigned int snake_y[SNAKE_LENGTH];  // coordenadas y / segmento
+
+// Punteros a la cabeza y cola
+unsigned int *head_x;
+unsigned int *head_y;
+unsigned int *tail_x;
+unsigned int *tail_y;
 
 //colors
 unsigned int snake_color = 0x0000FF00;  // Verde
 
 void main() {
     clear();
-    spawn_snake(x,y,snake_color);
-   
+    
+    // Inicializar la serpiente en posición horizontal
+    for(int i = 0; i < SNAKE_LENGTH; i++) {
+        snake_x[i] = 17 + i;  // Comienza en x=17
+        snake_y[i] = 12;      // Misma y para todos
+    }
+    
+    // Inicializar pointers
+    head_x = &snake_x[SNAKE_LENGTH-1];  // Último elemento (más a la derecha)
+    head_y = &snake_y[SNAKE_LENGTH-1];
+    tail_x = &snake_x[0];                // Primer elemento (más a la izquierda)
+    tail_y = &snake_y[0];
+    
+    // Dibujar serpiente inicial
+    spawn_snake();
+
     unsigned int mov = 4; // 1 = arriba, 2 = abajo, 3 = izq, 4 = derecha
 
     while (1) {
@@ -53,38 +71,46 @@ void main() {
 }
 
 void movimiento(unsigned int mov) {
+    // Guardar la posición antigua de la cola
+    unsigned int old_tail_x = *tail_x;
+    unsigned int old_tail_y = *tail_y;
+    
+    // Mover cada segmento a la posición del siguiente
+    for(int i = 0; i < SNAKE_LENGTH-1; i++) {
+        snake_x[i] = snake_x[i+1];
+        snake_y[i] = snake_y[i+1];
+    }
+    
+    // Mover la cabeza según la dirección
     switch(mov) {
         case 1://arriba
-            spawn_snake(x,y,0);
-            y += 1;
-            spawn_snake(x,y,snake_color);
+            (*head_y)++;
             break;
         case 2://abajo
-            spawn_snake(x,y,0);
-            y -= 1;
-            spawn_snake(x,y,snake_color);
+            (*head_y)--;
             break;
         case 3://izq
-            spawn_snake(x,y,0);
-            x -= 1;
-            spawn_snake(x,y,snake_color);
+            (*head_x)--;
             break;
         case 4://derecha
-            spawn_snake(x,y,0);
-            x += 1;
-            spawn_snake(x,y,snake_color);
+            (*head_x)++;
             break;
+    }
+    
+    // Borrar la cola antigua
+    set_pixel(old_tail_x, old_tail_y, 0);
+    
+    // Dibujar la nueva cabeza
+    set_pixel(*head_x, *head_y, snake_color);
+}
+
+void spawn_snake() {
+    // Dibujar cada segmento de la serpiente
+    for(int i = 0; i < SNAKE_LENGTH; i++) {
+        set_pixel(snake_x[i], snake_y[i], snake_color);
     }
 }
 
-//test para cambiar el cuadrado
-void spawn_snake(unsigned int x, unsigned int y, unsigned int color) {
-    for(int i = 0; i < snake_width; i++) {
-        for(int j = 0; j < snake_height; j++) {
-            set_pixel(x + i, y + j, color);
-        }
-    }
-}
 
 void set_pixel(unsigned int x, unsigned int y, unsigned int color) {
     unsigned int *led_base = LED_MATRIX_0_BASE;
