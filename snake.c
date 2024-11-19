@@ -5,19 +5,20 @@
 void set_pixel(unsigned int x, unsigned int y, unsigned int color);
 void delay();
 void spawn_snake();
+void spawn_apple();
 void clear();
 void movimiento(unsigned int mov);
 
-int vertical_orientation = 0    ;  // 0 = horizontal, 1 = vertical
+int vertical_orientation = 0;  // 0 = horizontal, 1 = vertical
 
 volatile unsigned int * d_pad_u = D_PAD_0_UP;
 volatile unsigned int * d_pad_d = D_PAD_0_DOWN;
 volatile unsigned int * d_pad_l = D_PAD_0_LEFT;
 volatile unsigned int * d_pad_r = D_PAD_0_RIGHT;
 
-//led max
-unsigned short max_x = 32; // Reducido en 1 para asegurar que la manzana 2x2 quepa
-unsigned short max_y = 22; // Reducido en 1 para asegurar que la manzana 2x2 quepa
+//led max - reducidos en 1 para asegurar que la manzana 2x2 quepa
+unsigned short max_x = 32;
+unsigned short max_y = 22;
 
 //apple coords
 unsigned int ax = 0;
@@ -77,6 +78,7 @@ void main() {
 
     unsigned int mov = 4; // 1 = arriba, 2 = abajo, 3 = izq, 4 = derecha
 
+    spawn_apple();
     while (1) {
         if (*d_pad_u == 1 && mov != 2) {
             mov = 1;
@@ -176,6 +178,20 @@ void spawn_snake() {
         set_pixel(snake_x[i][0], snake_y[i][0], snake_color);  // Columna izquierda
         set_pixel(snake_x[i][1], snake_y[i][1], snake_color);  // Columna derecha
     }
+}
+
+void spawn_apple() {
+    // Generar coordenadas aleatorias asegurando que quepa la manzana 2x2
+    ax = rand() % (max_x);
+    ay = rand() % (max_y);
+
+    printf("Manzana en: %d, %d\n", ax, ay);
+    
+    // Dibujar manzana 2x2
+    set_pixel(ax, ay, apple_color);       // Superior izquierda
+    set_pixel(ax+1, ay, apple_color);     // Superior derecha
+    set_pixel(ax, ay+1, apple_color);     // Inferior izquierda
+    set_pixel(ax+1, ay+1, apple_color);   // Inferior derecha
 }
 
 void set_pixel(unsigned int x, unsigned int y, unsigned int color) {
