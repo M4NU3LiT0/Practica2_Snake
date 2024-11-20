@@ -2,11 +2,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define W LED_MATRIX_0_WIDTH
+#define H LED_MATRIX_0_HEIGHT
+
 void set_pixel(unsigned int x, unsigned int y, unsigned int color);
 void delay();
 void spawn_snake();
 void spawn_apple();
 void clear();
+void bordes();
 void movimiento(unsigned int mov);
 int check_apple_collision();
 void delete_apple();
@@ -19,20 +23,20 @@ volatile unsigned int * d_pad_d = D_PAD_0_DOWN;
 volatile unsigned int * d_pad_l = D_PAD_0_LEFT;
 volatile unsigned int * d_pad_r = D_PAD_0_RIGHT;
 
-//led max
-unsigned short max_x = 32;
-unsigned short max_y = 22;
+//led max (ajustados para los bordes)
+unsigned short max_x = 31; // Reducido para los bordes
+unsigned short max_y = 21; // Reducido para los bordes
 
 //apple coords
 unsigned int ax = 0;
 unsigned int ay = 0;
 
 // Snake coordinates arrays (dos columnas para el ancho)
-#define MAX_SNAKE_LENGTH 20  // Máxima longitud permitida
+#define MAX_SNAKE_LENGTH 20
 #define INITIAL_LENGTH 4
-unsigned int current_length = INITIAL_LENGTH;  // Longitud actual de la serpiente
-unsigned int snake_x[MAX_SNAKE_LENGTH][2];  // [segmento][columna]
-unsigned int snake_y[MAX_SNAKE_LENGTH][2];  // [segmento][columna]
+unsigned int current_length = INITIAL_LENGTH;
+unsigned int snake_x[MAX_SNAKE_LENGTH][2];
+unsigned int snake_y[MAX_SNAKE_LENGTH][2];
 
 // Punteros a la cabeza (2 pixeles)
 unsigned int *head_x_left;
@@ -49,9 +53,11 @@ unsigned int *tail_y_right;
 //colors
 unsigned int snake_color = 0x0000FF00;  // Verde
 unsigned int apple_color = 0x00FF00FF;  // Rosa
+unsigned int border_color = 0x00FF0000; // Rojo
 
 void main() {
     clear();
+    bordes();
     
     // Inicializar la serpiente en posición horizontal
     for(int i = 0; i < current_length; i++) {
@@ -96,7 +102,6 @@ void main() {
         }
         movimiento(mov);
         
-        // Verificar colisión con la manzana después de cada movimiento
         if (check_apple_collision()) {
             delete_apple();
             grow_snake();
@@ -107,9 +112,26 @@ void main() {
     }
 }
 
-// Verifica si la cabeza de la serpiente colisiona con cualquier pixel de la manzana
+void bordes() {
+    unsigned int *led_base = LED_MATRIX_0_BASE;
+    for (int i = 0; i < W; i++) {
+        *(led_base + i) = border_color; //arriba
+        *(led_base + (W * (H - 1)) + i) = border_color; //abajo
+    }
+    for (int i = 0; i < H; i++) {
+        *(led_base + (W * i)) = border_color; //izquierda
+        *((led_base + (W * i)) + (W - 1)) = border_color; //derecha
+    }
+}
+
+void clear() {
+    unsigned int *led_base = LED_MATRIX_0_BASE;
+    for (int i = 0; i < (W * H); i++) {
+        *(led_base + i) = 0x00;
+    }
+}
+
 int check_apple_collision() {
-    // Verificar los cuatro píxeles de la manzana contra los dos píxeles de la cabeza
     if ((*head_x_left == ax && *head_y_left == ay) ||
         (*head_x_left == ax+1 && *head_y_left == ay) ||
         (*head_x_left == ax && *head_y_left == ay+1) ||
@@ -123,7 +145,6 @@ int check_apple_collision() {
     return 0;
 }
 
-// Borra la manzana de la pantalla
 void delete_apple() {
     set_pixel(ax, ay, 0);
     set_pixel(ax+1, ay, 0);
@@ -131,11 +152,9 @@ void delete_apple() {
     set_pixel(ax+1, ay+1, 0);
 }
 
-// Hace crecer la serpiente
 void grow_snake() {
-    if (current_length >= MAX_SNAKE_LENGTH) return;  // Evitar desbordamiento
+    if (current_length >= MAX_SNAKE_LENGTH) return;
     
-    // Mover todos los segmentos una posición hacia adelante
     for(int i = current_length; i > 0; i--) {
         snake_x[i][0] = snake_x[i-1][0];
         snake_y[i][0] = snake_y[i-1][0];
@@ -143,7 +162,6 @@ void grow_snake() {
         snake_y[i][1] = snake_y[i-1][1];
     }
     
-    // La nueva cola toma la posición de la cola anterior
     snake_x[0][0] = *tail_x_left;
     snake_y[0][0] = *tail_y_left;
     snake_x[0][1] = *tail_x_right;
@@ -151,13 +169,11 @@ void grow_snake() {
     
     current_length++;
     
-    // Actualizar punteros
     head_x_left = &snake_x[current_length-1][0];
     head_y_left = &snake_y[current_length-1][0];
     head_x_right = &snake_x[current_length-1][1];
     head_y_right = &snake_y[current_length-1][1];
     
-    // La cola siempre apunta al primer segmento
     tail_x_left = &snake_x[0][0];
     tail_y_left = &snake_y[0][0];
     tail_x_right = &snake_x[0][1];
@@ -165,13 +181,11 @@ void grow_snake() {
 }
 
 void movimiento(unsigned int mov) {
-    // Guardar la posición antigua de la cola
     unsigned int old_tail_x_left = *tail_x_left;
     unsigned int old_tail_y_left = *tail_y_left;
     unsigned int old_tail_x_right = *tail_x_right;
     unsigned int old_tail_y_right = *tail_y_right;
     
-    // Mover cada segmento a la posición del siguiente
     for(int i = 0; i < current_length-1; i++) {
         snake_x[i][0] = snake_x[i+1][0];
         snake_y[i][0] = snake_y[i+1][0];
@@ -179,7 +193,6 @@ void movimiento(unsigned int mov) {
         snake_y[i][1] = snake_y[i+1][1];
     }
     
-    // Mover la cabeza según la dirección
     switch(mov) {
         case 1: //arriba
             if (!vertical_orientation) {
@@ -222,11 +235,9 @@ void movimiento(unsigned int mov) {
             break;
     }
     
-    // Borrar la cola antigua
     set_pixel(old_tail_x_left, old_tail_y_left, 0);
     set_pixel(old_tail_x_right, old_tail_y_right, 0);
     
-    // Dibujar la nueva cabeza
     set_pixel(*head_x_left, *head_y_left, snake_color);
     set_pixel(*head_x_right, *head_y_right, snake_color);
 }
@@ -239,8 +250,9 @@ void spawn_snake() {
 }
 
 void spawn_apple() {
-    ax = rand() % (max_x);
-    ay = rand() % (max_y);
+    // Generar coordenadas entre 1 y max-1 para evitar los bordes
+    ax = 1 + (rand() % (max_x - 1));
+    ay = 1 + (rand() % (max_y - 1));
 
     printf("Manzana en: %d, %d\n", ax, ay);
     
@@ -262,11 +274,4 @@ void set_pixel(unsigned int x, unsigned int y, unsigned int color) {
 
 void delay() {
     for (volatile int i = 0; i < 2000; i++) {}
-}
-
-void clear() {
-    unsigned int *led_base = LED_MATRIX_0_BASE;
-    for (int i = 0; i < LED_MATRIX_0_WIDTH * LED_MATRIX_0_HEIGHT; i++) {
-        *(led_base + i) = 0x00;
-    }
 }
