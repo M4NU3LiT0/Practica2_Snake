@@ -51,9 +51,9 @@ unsigned int *tail_x_right;
 unsigned int *tail_y_right;
 
 //colors
-unsigned int snake_color = 0x0000FF00;  // Verde
-unsigned int apple_color = 0x00FF00FF;  // Rosa
-unsigned int border_color = 0x00FF0000; // Rojo
+unsigned int snake_color = 0x00FF0000;  // Rojo
+unsigned int apple_color = 0x0000FF00;  // Verde
+unsigned int border_color = 0x000000FF; // Azul
 
 void main() {
     clear();
